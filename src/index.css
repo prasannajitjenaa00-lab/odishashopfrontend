@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --black: #111111;
+  --gold: #C8A951;
+  --gold-light: #E2C97A;
+  --gold-dark: #A88730;
+  --cream: #F5F5F0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Poppins', sans-serif; background: #fff; color: #111; overflow-x: hidden; }
+
+@layer components {
+  .btn-gold {
+    @apply bg-gold text-black font-bold text-xs tracking-widest uppercase px-8 py-3.5 rounded-xl transition-all duration-300 hover:bg-gold-light hover:shadow-lg hover:shadow-gold/30 hover:-translate-y-0.5 inline-block;
+  }
+  .btn-outline-white {
+    @apply bg-transparent text-white border border-white/40 font-semibold text-xs tracking-widest uppercase px-8 py-3.5 rounded-xl transition-all duration-300 hover:border-gold hover:text-gold hover:-translate-y-0.5 inline-block;
+  }
+  .btn-cart {
+    @apply w-full bg-black text-gold border border-gold font-bold text-xs tracking-widest uppercase py-3 rounded-xl transition-all duration-300 hover:bg-gold hover:text-black;
+  }
+  .section-label {
+    @apply text-center text-gold-dark text-xs font-bold tracking-widest uppercase mb-3;
+  }
+  .section-title {
+    @apply text-center font-extrabold text-black mb-3;
+    font-size: clamp(28px, 3.5vw, 44px);
+    letter-spacing: -0.5px;
+  }
+  .section-divider {
+    @apply w-12 h-0.5 bg-gold mx-auto mb-16;
+  }
+  .gold-text { color: var(--gold); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: #C8A951; border-radius: 3px; }
+
+/* Reveal animation */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
