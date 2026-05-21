@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiSearch, FiUser, FiShoppingCart, FiMenu, FiX, FiHeart } from 'react-icons/fi'
+import { FiSearch, FiUser, FiShoppingCart, FiMoreVertical, FiX, FiHeart } from 'react-icons/fi'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
 
@@ -66,10 +66,10 @@ export default function Navbar({ onCartOpen }) {
             <Link to="/shop" className="text-white hover:text-gold transition-colors p-1">
               <FiSearch size={20} />
             </Link>
-            <Link to={user ? '/account' : '/login'} className="text-white hover:text-gold transition-colors p-1">
+            <Link to={user ? '/account' : '/login'} className="hidden lg:inline-flex text-white hover:text-gold transition-colors p-1">
               <FiUser size={20} />
             </Link>
-            <Link to="/wishlist" className="text-white hover:text-gold transition-colors p-1 relative">
+            <Link to="/wishlist" className="hidden lg:inline-flex text-white hover:text-gold transition-colors p-1 relative">
               <FiHeart size={20} />
               {wishlist.length > 0 && (
                 <span className="absolute -top-1 -right-1.5 bg-gold text-black rounded-full w-4 h-4 text-[10px] font-bold flex items-center justify-center">
@@ -77,7 +77,7 @@ export default function Navbar({ onCartOpen }) {
                 </span>
               )}
             </Link>
-            <button onClick={onCartOpen} className="text-white hover:text-gold transition-colors p-1 relative">
+            <button onClick={onCartOpen} className="hidden lg:inline-flex text-white hover:text-gold transition-colors p-1 relative">
               <FiShoppingCart size={20} />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1.5 bg-gold text-black rounded-full w-4 h-4 text-[10px] font-bold flex items-center justify-center">
@@ -86,7 +86,7 @@ export default function Navbar({ onCartOpen }) {
               )}
             </button>
             <button className="lg:hidden text-white hover:text-gold p-1" onClick={() => setMenuOpen(o => !o)}>
-              {menuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+              {menuOpen ? <FiX size={24} /> : <FiMoreVertical size={24} />}
             </button>
           </div>
         </div>
@@ -108,9 +108,37 @@ export default function Navbar({ onCartOpen }) {
                     {l.label} <span className="opacity-40">›</span>
                   </Link>
                 ))}
+                <Link to={user ? '/account' : '/login'}
+                  className="py-4 border-b border-white/5 text-sm font-medium flex justify-between items-center text-white hover:text-gold transition-colors">
+                  {user ? 'Account' : 'Login'} <FiUser size={18} />
+                </Link>
+                <Link to="/wishlist"
+                  className="py-4 border-b border-white/5 text-sm font-medium flex justify-between items-center text-white hover:text-gold transition-colors">
+                  Wishlist
+                  <span className="flex items-center gap-2">
+                    <FiHeart size={18} />
+                    {wishlist.length > 0 && (
+                      <span className="bg-gold text-black rounded-full w-5 h-5 text-[10px] font-bold flex items-center justify-center">
+                        {wishlist.length}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+                <button onClick={() => { onCartOpen(); setMenuOpen(false) }}
+                  className="py-4 border-b border-white/5 text-left text-sm font-medium flex justify-between items-center text-white hover:text-gold transition-colors">
+                  Cart
+                  <span className="flex items-center gap-2">
+                    <FiShoppingCart size={18} />
+                    {cartCount > 0 && (
+                      <span className="bg-gold text-black rounded-full w-5 h-5 text-[10px] font-bold flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </span>
+                </button>
                 {user
-                  ? <button onClick={logout} className="mt-4 btn-gold text-center rounded-xl">Logout</button>
-                  : <Link to="/login" className="mt-4 btn-gold text-center rounded-xl">Login / Register</Link>
+                  ? <button onClick={() => { logout(); setMenuOpen(false) }} className="mt-4 btn-gold text-center rounded-xl">Logout</button>
+                  : null
                 }
               </div>
             </motion.div>
