@@ -10,6 +10,9 @@ import LoginPage from './pages/LoginPage'
 import CheckoutPage from './pages/CheckoutPage'
 import AdminPage from './pages/AdminPage'
 import { OrderSuccessPage, NotFoundPage, WishlistPage, AccountPage, StoryPage, PolicyPage } from './pages/ExtraPages'
+import BlogListingPage from './pages/BlogListingPage'
+import BlogDetailsPage from './pages/BlogDetailsPage'
+import ContactPage from './pages/ContactPage'
 
 // Scrolls to top on every route change
 function ScrollToTop() {
@@ -34,6 +37,9 @@ export default function App() {
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/story" element={<StoryPage />} />
+            <Route path="/blogs" element={<BlogListingPage />} />
+            <Route path="/blog/:slug" element={<BlogDetailsPage />} />
+            <Route path="/contact" element={<ContactPage />} />
             <Route path="/refund" element={<PolicyPage />} />
             <Route path="/shipping" element={<PolicyPage />} />
             <Route path="/terms" element={<PolicyPage />} />

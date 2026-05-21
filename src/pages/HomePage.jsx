@@ -3,6 +3,8 @@ import Features from '../components/Features/Features'
 import Bestsellers from '../components/Products/Bestsellers'
 import WhyUs from '../components/WhyUs/WhyUs'
 import Reviews from '../components/Reviews/Reviews'
+import BlogSection from '../components/Blog/BlogSection'
+import ContactSection from '../components/Contact/ContactSection'
 import { Helmet } from 'react-helmet'
 
 export default function HomePage() {
@@ -14,6 +16,8 @@ export default function HomePage() {
       <Bestsellers />
       <WhyUs />
       <Reviews />
+      <BlogSection />
+      <ContactSection />
     </>
   )
 }

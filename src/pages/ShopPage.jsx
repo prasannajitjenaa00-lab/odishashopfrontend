@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 
 export default function ShopPage() {
   const [products, setProducts] = useState([])
-  const [categories, setCategories] = useState(['All', 'Rice', 'Dal'])
+  const [categories, setCategories] = useState([{ categoryName: 'All' }, { categoryName: 'Rice' }, { categoryName: 'Dal' }])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All')
@@ -19,8 +19,8 @@ export default function ShopPage() {
       try {
         const { data } = await api.get('/categories')
         if (data && data.length > 0) {
-          const catNames = ['All', ...data.map(c => c.categoryName)]
-          if (active) setCategories(catNames)
+          const fullCats = [{ categoryName: 'All' }, ...data]
+          if (active) setCategories(fullCats)
         }
       } catch (error) {
         console.error('Failed to fetch categories:', error)
@@ -82,11 +82,14 @@ export default function ShopPage() {
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Category */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
             {categories.map(c => (
-              <button key={c} onClick={() => setCategory(c)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold tracking-wide transition-all ${category === c ? 'bg-gold text-black' : 'bg-black/5 text-black/60 hover:bg-gold/20 hover:text-black'}`}>
-                {c}
+              <button key={c.categoryName} onClick={() => setCategory(c.categoryName)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold tracking-wide transition-all ${category === c.categoryName ? 'bg-gold text-black shadow-md' : 'bg-black/5 text-black/60 hover:bg-gold/20 hover:text-black'}`}>
+                {c.categoryImage && (
+                  <img src={c.categoryImage} alt={c.categoryName} className="w-5 h-5 rounded-full object-cover border border-black/10 bg-white" />
+                )}
+                {c.categoryName}
               </button>
             ))}
           </div>

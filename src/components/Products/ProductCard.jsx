@@ -92,7 +92,7 @@ export default function ProductCard({ product }) {
 
   return (
     <motion.div whileHover={{ y: -6 }} transition={{ duration: 0.3 }}
-      className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:shadow-black/10 transition-shadow duration-300 relative group">
+      className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:shadow-black/10 transition-shadow duration-300 relative group flex flex-col h-full">
       {product.badge && (
         <div className="absolute top-3 left-3 z-10 bg-gold text-black text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full">
           {product.badge}
@@ -103,19 +103,24 @@ export default function ProductCard({ product }) {
         <FiHeart size={14} fill={wishlisted ? 'currentColor' : 'none'}/>
       </button>
 
-      <Link to={`/product/${product._id}`}>
-        <div className="h-[200px] overflow-hidden">
-          {product.image ? (
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-          ) : (
-            <ProductSVG product={product}/>
-          )}
-        </div>
+      <Link to={`/product/${product._id}`} className="relative block h-[200px] overflow-hidden">
+        {product.image ? (
+          <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+        ) : (
+          <ProductSVG product={product}/>
+        )}
+        {product.stock <= 0 && (
+          <div className="absolute inset-0 bg-black/65 flex items-center justify-center z-10 backdrop-blur-[1px]">
+            <span className="bg-red-600 text-white text-xs font-black tracking-widest uppercase px-4 py-2 rounded-xl shadow-lg border border-red-500/20 animate-pulse">
+              OUT OF STOCK
+            </span>
+          </div>
+        )}
       </Link>
 
-      <div className="p-5">
+      <div className="p-5 flex flex-col flex-1">
         <Link to={`/product/${product._id}`}>
-          <h3 className="font-bold text-[15px] text-black mb-1 hover:text-gold transition-colors">{product.name}</h3>
+          <h3 className="font-bold text-[15px] text-black mb-1 hover:text-gold transition-colors line-clamp-2">{product.name}</h3>
         </Link>
         <div className="flex items-center gap-1 mb-3">
           {[...Array(5)].map((_,i) => (
@@ -123,14 +128,36 @@ export default function ProductCard({ product }) {
           ))}
           <span className="text-xs text-gray-400 ml-1">({product.reviews?.length || product.numReviews || 0})</span>
         </div>
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-xl font-extrabold text-black">₹{product.price}</span>
-          <span className="text-xs text-gray-400 font-medium">/ {product.weight}</span>
+        
+        <div className="mt-auto">
+          <div className="flex items-end justify-between mb-4">
+            <div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-extrabold text-black">₹{product.price}</span>
+                {product.discountPercent > 0 && (
+                  <span className="text-xs text-green-600 font-bold tracking-wide">{product.discountPercent}% OFF</span>
+                )}
+              </div>
+              <div className={`text-xs text-gray-400 font-medium line-through mt-0.5 ${product.discountPercent > 0 ? 'visible' : 'invisible'}`}>
+                {product.discountPercent > 0 ? `₹${product.originalPrice}` : '-'}
+              </div>
+            </div>
+            <span className="text-xs text-gray-400 font-medium pb-1">/ {product.weight}</span>
+          </div>
+          <button 
+            onClick={handleAdd}
+            disabled={product.stock <= 0}
+            className={`w-full border font-bold text-xs tracking-widest uppercase py-3 rounded-xl transition-all duration-300 ${
+              product.stock <= 0 
+                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
+                : added 
+                  ? 'bg-gold text-black border-gold' 
+                  : 'bg-black text-gold border-gold hover:bg-gold hover:text-black'
+            }`}
+          >
+            {product.stock <= 0 ? 'Out of Stock' : added ? '✓ Added!' : 'Add to Cart'}
+          </button>
         </div>
-        <button onClick={handleAdd}
-          className={`w-full border font-bold text-xs tracking-widest uppercase py-3 rounded-xl transition-all duration-300 ${added ? 'bg-gold text-black border-gold' : 'bg-black text-gold border-gold hover:bg-gold hover:text-black'}`}>
-          {added ? '✓ Added!' : 'Add to Cart'}
-        </button>
       </div>
     </motion.div>
   )

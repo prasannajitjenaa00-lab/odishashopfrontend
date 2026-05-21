@@ -76,8 +76,15 @@ export default function CartSidebar({ open, onClose }) {
                           <FiMinus size={12}/>
                         </button>
                         <span className="text-white text-sm font-bold w-5 text-center">{item.qty}</span>
-                        <button onClick={() => updateQty(item._id, item.qty + 1)}
-                          className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-gold transition-colors">
+                        <button 
+                          disabled={item.stock !== undefined && item.qty >= item.stock}
+                          onClick={() => updateQty(item._id, item.qty + 1)}
+                          className={`w-6 h-6 flex items-center justify-center transition-colors ${
+                            item.stock !== undefined && item.qty >= item.stock 
+                              ? 'text-white/10 cursor-not-allowed' 
+                              : 'text-white/60 hover:text-gold'
+                          }`}
+                        >
                           <FiPlus size={12}/>
                         </button>
                       </div>

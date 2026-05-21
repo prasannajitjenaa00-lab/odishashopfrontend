@@ -11,11 +11,7 @@ export default function MainLayout() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (user && user.role === 'admin') {
-      navigate('/admin')
-    }
-  }, [user, navigate])
+  // Admin redirect logic removed so admins can browse the public storefront
 
   return (
     <div className="min-h-screen flex flex-col">

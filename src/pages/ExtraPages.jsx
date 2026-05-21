@@ -5,11 +5,12 @@ import { useCart } from '../context/CartContext'
 import ProductCard from '../components/Products/ProductCard'
 import { PRODUCTS } from '../api/data'
 import { useAuth } from '../context/AuthContext'
-import { FiHeart, FiUser, FiShoppingBag, FiSettings, FiLogOut, FiClock, FiMapPin, FiCalendar, FiCreditCard, FiChevronDown, FiChevronUp, FiTruck } from 'react-icons/fi'
+import { FiHeart, FiUser, FiShoppingBag, FiSettings, FiLogOut, FiClock, FiMapPin, FiCalendar, FiCreditCard, FiChevronDown, FiChevronUp, FiTruck, FiFileText } from 'react-icons/fi'
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import AddressForm from '../components/AddressForm'
+import { downloadInvoice } from '../utils/labelGenerator'
 
 // ─── Order Success ──────────────────────────────────────────────────────────
 export function OrderSuccessPage() {
@@ -149,6 +150,17 @@ export function AccountPage() {
       fetchAddresses()
     }
   }, [user])
+
+  const handleInvoiceDownload = async (order) => {
+    const toastId = toast.loading('Generating tax invoice PDF...')
+    try {
+      await downloadInvoice(order)
+      toast.success('Invoice downloaded successfully!', { id: toastId })
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to download invoice. Please try again.', { id: toastId })
+    }
+  }
 
   if (!user) return (
     <div className="min-h-screen bg-cream flex items-center justify-center text-center px-5">
@@ -321,6 +333,16 @@ export function AccountPage() {
                                 </div>
                               </div>
                             </div>
+                            {order.status === 'Delivered' && (
+                              <div className="flex justify-end pt-3 mt-1">
+                                <button
+                                  onClick={() => handleInvoiceDownload(order)}
+                                  className="btn-gold py-2.5 px-5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-gold/10 hover:shadow-lg transition-all"
+                                >
+                                  <FiFileText size={14} /> Download Invoice
+                                </button>
+                              </div>
+                            )}
                           </motion.div>
                         )}
                       </div>
@@ -557,16 +579,23 @@ export function AccountPage() {
   )
 }
 
-// ─── Our Story Page ──────────────────────────────────────────────────────────
 export function StoryPage() {
   return (
-    <div className="bg-[#111] min-h-screen">
-      <div className="px-5 lg:px-[7%] py-20 max-w-4xl mx-auto text-center">
-        <div className="text-gold text-xs font-bold tracking-[4px] uppercase mb-4">Our Story</div>
-        <h1 className="text-white font-extrabold mb-6" style={{ fontSize: 'clamp(32px,5vw,56px)' }}>
+    <div 
+      className="bg-cover bg-center bg-no-repeat min-h-screen relative"
+      style={{ 
+        backgroundImage: `linear-gradient(rgba(17, 17, 17, 0.78), rgba(6, 4, 0, 0.84)), url('https://images.unsplash.com/photo-1500937386664-56d1dfef3854?q=80&w=2000')` 
+      }}
+    >
+      <div className="absolute inset-0 bg-black/25 backdrop-blur-[2px]" />
+      <div className="relative z-10 px-5 lg:px-[7%] py-24 max-w-5xl mx-auto text-center">
+        <div className="inline-flex items-center gap-2.5 text-gold text-xs font-bold tracking-[4px] uppercase mb-4 bg-gold/10 px-4 py-1.5 rounded-full border border-gold/20">
+          🌾 Our Story
+        </div>
+        <h1 className="text-white font-extrabold mb-6 leading-tight" style={{ fontSize: 'clamp(32px,5vw,56px)' }}>
           Born from the Fields <span className="text-gold">of Odisha</span>
         </h1>
-        <p className="text-white/55 text-sm leading-relaxed max-w-2xl mx-auto mb-16">
+        <p className="text-white/75 text-sm leading-relaxed max-w-2xl mx-auto mb-16 font-medium">
           OdishaShop was founded with a simple mission — to connect the incredible farmers of Odisha directly with consumers across India, cutting out middlemen and ensuring fair prices for both sides.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
@@ -575,12 +604,27 @@ export function StoryPage() {
             ['🚀', '2023', 'Expanded to 20+ farmers across 5 districts of Odisha.'],
             ['❤️', '2026', '5000+ happy customers across India and growing every day.'],
           ].map(([emoji, year, desc]) => (
-            <div key={year} className="border border-gold/20 rounded-2xl p-6 hover:border-gold/50 transition-colors">
+            <div key={year} className="bg-black/60 backdrop-blur-md border border-gold/20 rounded-3xl p-6 hover:border-gold hover:bg-black/80 transition-all duration-300 transform hover:-translate-y-1">
               <span className="text-3xl block mb-3">{emoji}</span>
               <div className="text-gold font-extrabold text-xl mb-2">{year}</div>
-              <p className="text-white/50 text-sm leading-relaxed">{desc}</p>
+              <p className="text-white/60 text-sm leading-relaxed">{desc}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-20 grid grid-cols-1 md:grid-cols-2 gap-8 text-left max-w-4xl mx-auto">
+          <div className="bg-black/55 backdrop-blur-md border border-gold/15 rounded-3xl p-8 hover:border-gold/30 transition-all">
+            <h3 className="text-gold font-bold text-base mb-3.5 flex items-center gap-2">🌱 The Seeds of Change</h3>
+            <p className="text-white/70 text-xs leading-relaxed">
+              Every package of OdishaShop represents a deep-rooted tradition of natural, chemical-free agriculture. Our local farmers nurture native crops like unpolished Gota Biri, nutrient-rich Red Rice, and horse gram using organic fertilizers like Go-Bar (aged cow dung) and neem compost, preserving our ancient soil for generations to come.
+            </p>
+          </div>
+          <div className="bg-black/55 backdrop-blur-md border border-gold/15 rounded-3xl p-8 hover:border-gold/30 transition-all">
+            <h3 className="text-gold font-bold text-base mb-3.5 flex items-center gap-2">🤝 Supporting Our Farmers</h3>
+            <p className="text-white/70 text-xs leading-relaxed">
+              By cutting out exploitative middlemen and distributors, we return fair prices directly back to rural village cooperatives. We work side-by-side with heirloom seed guardians to protect traditional Odia crop biodiversity, transforming agricultural livelihoods across Nayagarh, Khurda, and coastal Odisha.
+            </p>
+          </div>
         </div>
       </div>
     </div>

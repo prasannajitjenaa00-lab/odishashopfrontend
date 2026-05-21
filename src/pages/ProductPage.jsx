@@ -70,6 +70,7 @@ export default function ProductPage() {
   }, [id])
 
   const handleAdd = () => {
+    if (product.stock <= 0) return
     for (let i = 0; i < qty; i++) addToCart(product)
     toast.success(`${qty}x ${product.shortName} added to cart!`, {
       style: { background: '#111', color: '#fff', border: '1px solid #C8A951' },
@@ -108,10 +109,10 @@ export default function ProductPage() {
         </div>
 
         {/* Main */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white rounded-3xl p-8 shadow-sm mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 bg-white rounded-3xl p-5 sm:p-8 shadow-sm mb-12">
           {/* Image */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}
-            className="rounded-2xl overflow-hidden aspect-square max-h-[460px]"
+            className="rounded-2xl overflow-hidden aspect-square max-h-[460px] relative"
             style={{ background: 'linear-gradient(135deg, #1a1200, #0d0d0d)' }}>
             {product.image ? (
               <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
@@ -132,6 +133,13 @@ export default function ProductPage() {
                 <ellipse cx="200" cy="290" rx="125" ry="18" fill="#9A7020" opacity="0.4"/>
               </svg>
             )}
+            {product.stock <= 0 && (
+              <div className="absolute inset-0 bg-black/65 flex items-center justify-center z-10 backdrop-blur-[1px]">
+                <span className="bg-red-600 text-white text-xs font-black tracking-widest uppercase px-5 py-2.5 rounded-xl shadow-lg border border-red-500/20 animate-pulse">
+                  OUT OF STOCK
+                </span>
+              </div>
+            )}
           </motion.div>
 
           {/* Info */}
@@ -150,27 +158,66 @@ export default function ProductPage() {
                 </div>
                 <span className="text-sm text-gray-500">{product.rating?.toFixed(1) || '0.0'} ({product.reviews?.length || 0} reviews)</span>
               </div>
-              <div className="flex items-baseline gap-2 mb-5">
-                <span className="text-4xl font-extrabold text-black">₹{product.price}</span>
-                <span className="text-gray-400 text-sm">/ {product.weight}</span>
+              <div className="mb-5">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold text-black">₹{product.price}</span>
+                  {product.discountPercent > 0 && (
+                    <span className="text-lg text-green-600 font-bold tracking-wide">{product.discountPercent}% OFF</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  {product.discountPercent > 0 && (
+                    <span className="text-lg text-gray-400 font-medium line-through">₹{product.originalPrice}</span>
+                  )}
+                  <span className="text-gray-400 text-sm">/ {product.weight}</span>
+                </div>
               </div>
               <p className="text-gray-500 text-sm leading-relaxed mb-6">{product.description}</p>
 
               {/* Stock */}
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-2 h-2 rounded-full bg-green-400"/>
-                <span className="text-sm text-gray-500">{product.stock} units in stock</span>
-              </div>
+              {product.stock > 0 ? (
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-2 h-2 rounded-full bg-green-400"/>
+                  <span className="text-sm text-gray-500">{product.stock} units in stock</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"/>
+                  <span className="text-sm font-extrabold text-red-600 uppercase tracking-wider">Out of Stock</span>
+                </div>
+              )}
 
               {/* Qty + Add */}
               <div className="flex items-center gap-4 mb-4">
-                <div className="flex items-center border border-black/10 rounded-xl overflow-hidden">
-                  <button onClick={() => setQty(q => Math.max(1, q-1))} className="px-4 py-3 hover:bg-gold/10 transition-colors text-gray-500 font-bold">−</button>
-                  <span className="px-5 py-3 font-bold text-black border-x border-black/10">{qty}</span>
-                  <button onClick={() => setQty(q => Math.min(product.stock, q+1))} className="px-4 py-3 hover:bg-gold/10 transition-colors text-gray-500 font-bold">+</button>
+                <div className="flex items-center border border-black/10 rounded-xl overflow-hidden bg-white">
+                  <button 
+                    disabled={product.stock <= 0 || qty <= 1}
+                    onClick={() => setQty(q => Math.max(1, q-1))} 
+                    className={`px-4 py-3 hover:bg-gold/10 transition-colors text-gray-500 font-bold ${product.stock <= 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  >
+                    −
+                  </button>
+                  <span className="px-5 py-3 font-bold text-black border-x border-black/10">
+                    {product.stock <= 0 ? 0 : qty}
+                  </span>
+                  <button 
+                    disabled={product.stock <= 0 || qty >= product.stock}
+                    onClick={() => setQty(q => Math.min(product.stock, q+1))} 
+                    className={`px-4 py-3 hover:bg-gold/10 transition-colors text-gray-500 font-bold ${product.stock <= 0 || qty >= product.stock ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  >
+                    +
+                  </button>
                 </div>
-                <button onClick={handleAdd} className="flex-1 btn-gold rounded-xl py-3.5 flex items-center justify-center gap-2">
-                  <FiShoppingCart size={16}/> Add to Cart
+                <button 
+                  disabled={product.stock <= 0}
+                  onClick={handleAdd}
+                  className={`flex-1 rounded-xl py-3.5 flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-xs transition-all duration-300 ${
+                    product.stock <= 0 
+                      ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed' 
+                      : 'btn-gold'
+                  }`}
+                >
+                  <FiShoppingCart size={16}/> {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                 </button>
               </div>
               <button onClick={() => toggleWishlist(product)}
@@ -196,7 +243,7 @@ export default function ProductPage() {
         </div>
 
         {/* Reviews & Ratings Section */}
-        <div className="bg-white rounded-3xl p-8 shadow-sm mb-12 border border-black/5">
+        <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-sm mb-12 border border-black/5">
           <h2 className="text-xl font-bold text-black mb-6">Customer Reviews & Ratings</h2>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -305,7 +352,7 @@ export default function ProductPage() {
         {related.length > 0 && (
           <div>
             <h2 className="text-xl font-bold text-black mb-6">You May Also Like</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {related.map(p => <ProductCard key={p._id} product={p}/>)}
             </div>
           </div>

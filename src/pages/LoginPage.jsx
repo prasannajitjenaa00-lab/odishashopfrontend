@@ -28,13 +28,13 @@ export default function LoginPage() {
 
   const [show, setShow] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' })
-  
+
   // OTP state
   const [otpCode, setOtpCode] = useState('')
   const [otpEmail, setOtpEmail] = useState(() => {
     return location.state?.email || localStorage.getItem('odisha_otp_email') || ''
   })
-  
+
   // Timer for Resend OTP
   const [timer, setTimer] = useState(0)
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
     const initializeGoogle = () => {
       if (!window.google) return
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-google-client-id.apps.googleusercontent.com'
-      
+
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: handleGoogleResponse,
@@ -90,13 +90,14 @@ export default function LoginPage() {
       // Render button if we are on the login screen
       const btnDiv = document.getElementById('googleSignInBtn')
       if (btnDiv && mode === 'login') {
+        const btnWidth = window.innerWidth < 440 ? window.innerWidth - 90 : 380;
         window.google.accounts.id.renderButton(btnDiv, {
           type: 'standard',
           theme: 'dark',
           size: 'large',
           text: 'continue_with',
           shape: 'pill',
-          width: 380
+          width: btnWidth
         })
       }
     }
@@ -136,8 +137,8 @@ export default function LoginPage() {
           if (res.user?.role === 'admin') navigate('/admin')
           else navigate('/')
         } else {
-          if (res.message === 'Email is not registered') {
-            setErrors(errs => ({ ...errs, email: 'Your email is not registered' }))
+          if (res.message.includes('registered')) {
+            setErrors(errs => ({ ...errs, email: 'Your email has not been registered. Please create an account.' }))
           } else if (res.message === 'Invalid email or password') {
             setErrors(errs => ({ ...errs, password: 'Invalid email or password' }))
           } else {
@@ -145,6 +146,16 @@ export default function LoginPage() {
           }
           if (res.message.includes('verify')) {
             setOtpEmail(form.email)
+            toast.loading('Sending OTP...', { id: 'otp-send' })
+            const otpRes = await resendOtp(form.email)
+            if (otpRes.success) {
+              toast.success('A new OTP has been sent to your email.', { id: 'otp-send' })
+              setTimer(60)
+            } else if (otpRes.message.includes('wait 60 seconds')) {
+              toast.success('Please check your email. An OTP was already sent recently.', { id: 'otp-send' })
+            } else {
+              toast.error(otpRes.message, { id: 'otp-send' })
+            }
             navigate('/verify-otp', { state: { email: form.email } })
           }
         }
@@ -231,11 +242,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#111] flex items-center justify-center px-5 py-16 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(200,169,81,0.07)_0%,transparent_70%)] pointer-events-none"/>
-      
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(200,169,81,0.07)_0%,transparent_70%)] pointer-events-none" />
+
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         className="w-full max-w-md relative z-10">
-        
+
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex flex-col items-center gap-2.5">
@@ -247,15 +258,15 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm shadow-xl">
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-sm shadow-xl">
           <AnimatePresence mode="wait">
-            
+
             {/* VIEW 1: LOGIN & REGISTER */}
             {mode === 'login' && (
               <motion.div key="login" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
                 {/* Tabs */}
                 <div className="flex rounded-xl bg-white/5 p-1 mb-7">
-                  {['login','register'].map(t => (
+                  {['login', 'register'].map(t => (
                     <button key={t} onClick={() => setTab(t)}
                       className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${tab === t ? 'bg-gold text-black shadow-lg shadow-gold/20' : 'text-white/50 hover:text-white'}`}>
                       {t === 'login' ? 'Login' : 'Register'}
@@ -268,23 +279,23 @@ export default function LoginPage() {
                     <div>
                       <label className="text-white/60 text-xs font-medium block mb-1.5">Full Name</label>
                       <div className="relative">
-                        <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16}/>
+                        <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16} />
                         <input type="text" required placeholder="Your full name"
-                          value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors"/>
+                          value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors" />
                       </div>
                     </div>
                   )}
                   <div>
                     <label className="text-white/60 text-xs font-medium block mb-1.5">Email Address</label>
                     <div className="relative">
-                      <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16}/>
+                      <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16} />
                       <input type="email" required placeholder="you@example.com"
                         value={form.email} onChange={e => {
-                          setForm(f => ({...f, email: e.target.value}));
-                          setErrors(errs => ({...errs, email: ''}));
+                          setForm(f => ({ ...f, email: e.target.value }));
+                          setErrors(errs => ({ ...errs, email: '' }));
                         }}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors"/>
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors" />
                     </div>
                     {errors.email && (
                       <p className="text-xs text-red-500 font-semibold mt-1.5 pl-1">{errors.email}</p>
@@ -293,16 +304,16 @@ export default function LoginPage() {
                   <div>
                     <label className="text-white/60 text-xs font-medium block mb-1.5">Password</label>
                     <div className="relative">
-                      <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16}/>
+                      <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16} />
                       <input type={show ? 'text' : 'password'} required placeholder="••••••••"
                         value={form.password} onChange={e => {
-                          setForm(f => ({...f, password: e.target.value}));
-                          setErrors(errs => ({...errs, password: ''}));
+                          setForm(f => ({ ...f, password: e.target.value }));
+                          setErrors(errs => ({ ...errs, password: '' }));
                         }}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-12 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors"/>
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-12 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors" />
                       <button type="button" onClick={() => setShow(s => !s)}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
-                        {show ? <FiEyeOff size={16}/> : <FiEye size={16}/>}
+                        {show ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                       </button>
                     </div>
                     {errors.password && (
@@ -312,13 +323,13 @@ export default function LoginPage() {
                       <p className="text-[10px] text-white/40 mt-1.5">Password must be at least 6 characters long.</p>
                     )}
                   </div>
-                  
+
                   {tab === 'login' && (
                     <div className="text-right">
                       <Link to="/forgot-password" className="text-gold/70 text-xs hover:text-gold transition-colors">Forgot password?</Link>
                     </div>
                   )}
-                  
+
                   <button type="submit" disabled={loading}
                     className="w-full btn-gold py-3.5 rounded-xl text-sm font-bold mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     {loading ? 'Please wait...' : tab === 'login' ? 'Login to Account' : 'Create Account'}
@@ -332,8 +343,8 @@ export default function LoginPage() {
                   <div className="flex-grow border-t border-white/10"></div>
                 </div>
 
-                <div className="flex justify-center w-full">
-                  <div id="googleSignInBtn" className="w-full max-w-[380px] min-h-[40px]"></div>
+                <div className="flex justify-center w-full overflow-hidden">
+                  <div id="googleSignInBtn" className="flex justify-center w-full"></div>
                 </div>
 
                 <p className="text-center text-white/30 text-xs mt-6">
@@ -362,13 +373,13 @@ export default function LoginPage() {
                   <div>
                     <label className="text-white/60 text-xs font-medium block mb-1.5">Verification Code</label>
                     <div className="relative">
-                      <FiShield className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16}/>
+                      <FiShield className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16} />
                       <input type="text" required placeholder="Enter your OTP" maxLength={4}
                         value={otpCode} onChange={e => {
                           setOtpCode(e.target.value.replace(/\D/g, ''));
-                          setErrors(errs => ({...errs, otp: ''}));
+                          setErrors(errs => ({ ...errs, otp: '' }));
                         }}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-center text-white text-sm font-semibold placeholder:text-white/20 focus:outline-none focus:border-gold transition-colors"/>
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-center text-white text-sm font-semibold placeholder:text-white/20 focus:outline-none focus:border-gold transition-colors" />
                     </div>
                     {errors.otp && (
                       <p className="text-xs text-red-500 font-semibold mt-1.5 text-center">{errors.otp}</p>
@@ -383,7 +394,7 @@ export default function LoginPage() {
 
                 <div className="flex items-center justify-between text-xs pt-2">
                   <span className="text-white/40 flex items-center gap-1.5">
-                    <FiClock size={12}/>
+                    <FiClock size={12} />
                     {timer > 0 ? `Resend in ${timer}s` : 'Ready to resend'}
                   </span>
                   <button onClick={handleResendOtp} disabled={timer > 0 || loading}
@@ -413,10 +424,10 @@ export default function LoginPage() {
                   <div>
                     <label className="text-white/60 text-xs font-medium block mb-1.5">Email Address</label>
                     <div className="relative">
-                      <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16}/>
+                      <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16} />
                       <input type="email" required placeholder="you@example.com"
-                        value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors"/>
+                        value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors" />
                     </div>
                   </div>
 
@@ -447,23 +458,23 @@ export default function LoginPage() {
                   <div>
                     <label className="text-white/60 text-xs font-medium block mb-1.5">4-Digit OTP Code</label>
                     <div className="relative">
-                      <FiShield className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16}/>
+                      <FiShield className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16} />
                       <input type="text" required placeholder="Enter your OTP" maxLength={4}
                         value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-center text-white text-sm font-semibold placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors"/>
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-center text-white text-sm font-semibold placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors" />
                     </div>
                   </div>
 
                   <div>
                     <label className="text-white/60 text-xs font-medium block mb-1.5">New Password</label>
                     <div className="relative">
-                      <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16}/>
+                      <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16} />
                       <input type={show ? 'text' : 'password'} required placeholder="••••••••"
-                        value={form.password} onChange={e => setForm(f => ({...f, password: e.target.value}))}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-12 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors"/>
+                        value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-12 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors" />
                       <button type="button" onClick={() => setShow(s => !s)}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
-                        {show ? <FiEyeOff size={16}/> : <FiEye size={16}/>}
+                        {show ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                       </button>
                     </div>
                   </div>
@@ -471,10 +482,10 @@ export default function LoginPage() {
                   <div>
                     <label className="text-white/60 text-xs font-medium block mb-1.5">Confirm New Password</label>
                     <div className="relative">
-                      <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16}/>
+                      <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={16} />
                       <input type={show ? 'text' : 'password'} required placeholder="••••••••"
-                        value={form.confirmPassword} onChange={e => setForm(f => ({...f, confirmPassword: e.target.value}))}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-12 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors"/>
+                        value={form.confirmPassword} onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-12 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-gold transition-colors" />
                     </div>
                   </div>
 
@@ -486,7 +497,7 @@ export default function LoginPage() {
 
                 <div className="flex items-center justify-between text-xs pt-2">
                   <span className="text-white/40 flex items-center gap-1.5">
-                    <FiClock size={12}/>
+                    <FiClock size={12} />
                     {timer > 0 ? `Resend in ${timer}s` : 'Ready to resend'}
                   </span>
                   <button onClick={handleForgotResendOtp} disabled={timer > 0 || loading}

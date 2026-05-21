@@ -32,7 +32,7 @@ export default function Hero() {
         </div>
 
         {/* Stats */}
-        <div className="flex gap-10 mt-12 pt-10 border-t border-white/10">
+        <div className="flex flex-wrap gap-6 sm:gap-10 mt-12 pt-10 border-t border-white/10">
           {[['5000+', 'Happy Customers'], ['20+', 'Local Farmers'], ['100%', 'Natural Products']].map(([num, label]) => (
             <div key={label} className="text-center">
               <div className="text-gold font-extrabold text-2xl leading-none">{num}</div>
