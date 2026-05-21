@@ -5,7 +5,7 @@ import { FiTruck, FiRefreshCw, FiLock, FiPhone } from 'react-icons/fi'
 
 const trust = [
   { icon: <FiTruck size={26}/>, title: 'Free Shipping', desc: 'On orders above ₹499' },
-  { icon: <FiRefreshCw size={26}/>, title: '7 Days Return', desc: 'Easy return policy' },
+  { icon: <FiRefreshCw size={26}/>, title: 'Fresh Guarantee', desc: '100% natural & fresh' },
   { icon: <FiLock size={26}/>, title: 'Secure Payment', desc: '100% secure payments' },
   { icon: <FiPhone size={26}/>, title: 'Customer Support', desc: 'We are here to help' },
 ]
@@ -81,8 +81,13 @@ export default function Footer() {
       <div className="border-t border-white/7 px-5 lg:px-[7%] py-5 flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="text-white/30 text-xs">© 2026 OdishaShop | All Rights Reserved</div>
         <div className="flex flex-wrap justify-center gap-5">
-          {['Privacy Policy','Terms of Service','Shipping Policy','Refund Policy'].map(l => (
-            <Link key={l} to="#" className="text-white/30 text-xs hover:text-gold transition-colors">{l}</Link>
+          {[
+            ['Privacy Policy', '/privacy'],
+            ['Terms of Service', '/terms'],
+            ['Shipping Policy', '/shipping'],
+            ['Refund Policy', '/refund']
+          ].map(([l, to]) => (
+            <Link key={l} to={to} className="text-white/30 text-xs hover:text-gold transition-colors">{l}</Link>
           ))}
         </div>
       </div>

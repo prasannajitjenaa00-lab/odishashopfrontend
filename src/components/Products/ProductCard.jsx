@@ -121,7 +121,7 @@ export default function ProductCard({ product }) {
           {[...Array(5)].map((_,i) => (
             <FiStar key={i} size={12} fill={i < Math.floor(product.rating) ? '#C8A951' : 'none'} stroke="#C8A951"/>
           ))}
-          <span className="text-xs text-gray-400 ml-1">({product.reviews})</span>
+          <span className="text-xs text-gray-400 ml-1">({product.reviews?.length || product.numReviews || 0})</span>
         </div>
         <div className="flex items-center justify-between mb-4">
           <span className="text-xl font-extrabold text-black">₹{product.price}</span>

@@ -14,6 +14,11 @@
 html { scroll-behavior: smooth; }
 body { font-family: 'Poppins', sans-serif; background: #fff; color: #111; overflow-x: hidden; }
 
+/* Ensure all interactive controls show a hand pointer cursor on hover */
+a, button, select, input[type="submit"], input[type="button"], [role="button"], .cursor-pointer {
+  cursor: pointer !important;
+}
+
 @layer components {
   .btn-gold {
     @apply bg-gold text-black font-bold text-xs tracking-widest uppercase px-8 py-3.5 rounded-xl transition-all duration-300 hover:bg-gold-light hover:shadow-lg hover:shadow-gold/30 hover:-translate-y-0.5 inline-block;

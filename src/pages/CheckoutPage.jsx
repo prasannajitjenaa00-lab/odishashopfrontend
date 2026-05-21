@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
+import AddressForm from '../components/AddressForm'
 
 const STEPS = ['Address', 'Payment', 'Confirm']
 
@@ -21,11 +22,51 @@ export default function CheckoutPage() {
   const [pinStatus, setPinStatus] = useState({ type: '', message: '' })
   const [currentOrderId, setCurrentOrderId] = useState(null)
 
-  useEffect(() => {
-    if (address.pincode && /^\d{6}$/.test(address.pincode)) {
-      verifyPincodeAuto(address.pincode)
+  const [savedAddresses, setSavedAddresses] = useState([])
+  const [loadingAddresses, setLoadingAddresses] = useState(true)
+  const [showAddressForm, setShowAddressForm] = useState(false)
+  const [editingAddress, setEditingAddress] = useState(null)
+  const [selectedAddressId, setSelectedAddressId] = useState(null)
+
+  const fetchSavedAddresses = async () => {
+    try {
+      const { data } = await api.get('/addresses')
+      setSavedAddresses(data)
+      const defaultAddr = data.find(a => a.isDefault) || data[0]
+      if (defaultAddr) {
+        setSelectedAddressId(defaultAddr._id)
+      } else {
+        setShowAddressForm(true) // Open new address form if no address exists
+      }
+    } catch (err) {
+      console.error('Failed to fetch addresses:', err.message)
+    } finally {
+      setLoadingAddresses(false)
     }
-  }, [address.pincode])
+  }
+
+  useEffect(() => {
+    if (user) {
+      fetchSavedAddresses()
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (selectedAddressId && savedAddresses.length > 0) {
+      const selected = savedAddresses.find(a => a._id === selectedAddressId)
+      if (selected) {
+        setAddress({
+          name: selected.name,
+          phone: selected.phone,
+          line1: `${selected.address}, ${selected.locality}${selected.landmark ? `, Landmark: ${selected.landmark}` : ''}${selected.alternatePhone ? `, Alt Phone: ${selected.alternatePhone}` : ''}`,
+          city: selected.city,
+          state: selected.state,
+          pincode: selected.pincode
+        })
+        verifyPincodeAuto(selected.pincode)
+      }
+    }
+  }, [selectedAddressId, savedAddresses])
 
   const verifyPincodeAuto = async (pin) => {
     setValidating(true)
@@ -34,10 +75,8 @@ export default function CheckoutPage() {
       const { data } = await api.post('/check-pincode', { pincode: pin })
       if (data.success && data.deliveryAvailable) {
         setPinStatus({ type: 'success', message: data.message || `Delivery available in ${data.area || data.district}` })
-        setAddress(prev => ({ ...prev, city: data.district, state: data.state }))
       } else {
         setPinStatus({ type: 'error', message: data.message || 'Currently not delivering in this area' })
-        if (data.district) setAddress(prev => ({ ...prev, city: data.district, state: data.state || 'Odisha' }))
       }
     } catch (error) {
       setPinStatus({ type: 'error', message: error.response?.data?.message || 'Failed to verify pincode' })
@@ -47,26 +86,27 @@ export default function CheckoutPage() {
   }
 
   const handleContinueToPayment = async () => {
-    if (!address.name || !address.phone || !address.line1 || !address.city || !address.pincode) {
-      return toast.error('Please fill all address fields')
+    if (!selectedAddressId) {
+      return toast.error('Please select or add a delivery address')
     }
-    if (!/^\d{6}$/.test(address.pincode)) {
-      return toast.error('Please enter a valid 6-digit pincode')
+    const selected = savedAddresses.find(a => a._id === selectedAddressId)
+    if (!selected) {
+      return toast.error('Selected address is invalid')
     }
+
     if (pinStatus.type === 'error') {
-      return toast.error('Please provide a valid pincode in the delivery area')
+      return toast.error('Currently not delivering in this area')
     }
     
     if (pinStatus.type !== 'success') {
       setValidating(true)
       try {
-        const { data } = await api.post('/check-pincode', { pincode: address.pincode })
+        const { data } = await api.post('/check-pincode', { pincode: selected.pincode })
         if (data.success && data.deliveryAvailable) {
           setPinStatus({ type: 'success', message: data.message || `Delivery available in ${data.area || data.district}` })
           setStep(1)
         } else {
           setPinStatus({ type: 'error', message: data.message || 'Currently not delivering in this area' })
-          if (data.district) setAddress(prev => ({ ...prev, city: data.district, state: data.state || 'Odisha' }))
           return toast.error(data.message || 'Currently not delivering in this area')
         }
       } catch (error) {
@@ -223,52 +263,157 @@ export default function CheckoutPage() {
             {step === 0 && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-3xl p-8 shadow-sm">
-                <div className="flex items-center gap-2.5 mb-6">
-                  <FiMapPin className="text-gold" size={20}/>
-                  <h2 className="font-bold text-lg">Delivery Address</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    ['name','Full Name','text','col-span-1'],
-                    ['phone','Phone Number','tel','col-span-1'],
-                    ['line1','Street Address, Area','text','sm:col-span-2'],
-                    ['city','City','text','col-span-1'],
-                    ['pincode','Pincode','text','col-span-1'],
-                  ].map(([key, label, type, cls]) => (
-                    <div key={key} className={cls}>
-                      <label className="text-xs font-medium text-gray-500 block mb-1.5">{label}</label>
-                      <input type={type} value={address[key]} onChange={e => {
-                        const value = key === 'pincode' ? e.target.value.replace(/[^0-9]/g, '') : e.target.value
-                        setAddress(a => ({...a, [key]: key === 'pincode' ? value.trim() : value}))
-                        if (key === 'pincode') setPinStatus({ type: '', message: '' })
-                      }}
-                        placeholder={label}
-                        inputMode={key === 'pincode' ? 'numeric' : undefined}
-                        maxLength={key === 'pincode' ? 6 : undefined}
-                        autoComplete={key === 'pincode' ? 'postal-code' : undefined}
-                        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors ${
-                          key === 'city' && pinStatus.type === 'error' ? 'border-red-500 bg-red-50 focus:border-red-500' : 'border-black/10 focus:border-gold'
-                        }`}/>
-                      {key === 'pincode' && pinStatus.message && (
-                        <div className={`mt-1.5 text-xs font-semibold ${pinStatus.type === 'error' ? 'text-red-500' : pinStatus.type === 'success' ? 'text-green-600' : 'text-gray-400'}`}>
-                          {pinStatus.message}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 block mb-1.5">State</label>
-                    <select value={address.state} onChange={e => setAddress(a => ({...a, state: e.target.value}))}
-                      className="w-full border border-black/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gold transition-colors bg-white">
-                      {['Odisha','Andhra Pradesh','Karnataka','Maharashtra','Delhi','Tamil Nadu','West Bengal'].map(s => (
-                        <option key={s}>{s}</option>
-                      ))}
-                    </select>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-2.5">
+                    <FiMapPin className="text-gold" size={20}/>
+                    <h2 className="font-bold text-lg text-black">Delivery Address</h2>
                   </div>
+                  {!showAddressForm && (
+                    <button
+                      onClick={() => { setEditingAddress(null); setShowAddressForm(true); }}
+                      className="btn-gold py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 self-start sm:self-auto"
+                    >
+                      + Add New Address
+                    </button>
+                  )}
                 </div>
-                <button onClick={handleContinueToPayment} disabled={validating} className="btn-gold mt-6 w-full py-3.5 rounded-xl disabled:opacity-60">
-                  {validating ? 'Checking Delivery...' : 'Continue to Payment'}
-                </button>
+
+                {showAddressForm ? (
+                  <AddressForm
+                    initialAddress={editingAddress}
+                    onSubmit={async (saved) => {
+                      await fetchSavedAddresses()
+                      setSelectedAddressId(saved._id)
+                      setShowAddressForm(false)
+                      setEditingAddress(null)
+                    }}
+                    onCancel={() => {
+                      setShowAddressForm(false)
+                      setEditingAddress(null)
+                    }}
+                  />
+                ) : loadingAddresses ? (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gold" />
+                    <span className="text-gray-400 text-xs font-semibold">Loading addresses...</span>
+                  </div>
+                ) : savedAddresses.length === 0 ? (
+                  <div className="text-center py-16 bg-cream/15 border border-dashed border-black/10 rounded-3xl">
+                    <FiMapPin className="text-gray-200 mx-auto mb-4" size={64}/>
+                    <h3 className="text-lg font-bold text-black mb-2">No addresses saved yet</h3>
+                    <p className="text-gray-400 text-sm mb-6">Add shipping addresses to continue checking out.</p>
+                    <button
+                      onClick={() => { setEditingAddress(null); setShowAddressForm(true); }}
+                      className="btn-gold py-2.5 px-6 rounded-xl text-xs font-bold uppercase tracking-wider"
+                    >
+                      + Add New Address
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {savedAddresses.map((addr) => {
+                        const isSelected = selectedAddressId === addr._id
+                        return (
+                          <div 
+                            key={addr._id} 
+                            onClick={() => setSelectedAddressId(addr._id)}
+                            className={`bg-white border-2 rounded-2xl p-5 relative transition-all duration-300 flex flex-col justify-between cursor-pointer select-none ${
+                              isSelected 
+                                ? 'border-gold bg-gold/2 shadow-md shadow-gold/5' 
+                                : 'border-black/5 hover:border-gold/30 hover:shadow-sm'
+                            }`}
+                          >
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-extrabold text-sm text-black flex items-center gap-1.5">
+                                  {addr.name}
+                                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                    addr.addressType === 'work' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                                  }`}>
+                                    {addr.addressType === 'work' ? '💼 Work' : '🏡 Home'}
+                                  </span>
+                                </span>
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                  isSelected ? 'border-gold bg-gold' : 'border-gray-300'
+                                }`}>
+                                  {isSelected && <FiCheck size={12} className="text-black font-bold"/>}
+                                </div>
+                              </div>
+
+                              <p className="text-xs text-gray-500 font-semibold flex items-center gap-1">
+                                📱 {addr.phone} {addr.alternatePhone && <span className="text-gray-400 font-medium">| Alt: {addr.alternatePhone}</span>}
+                              </p>
+
+                              <div className="text-xs text-gray-600 leading-relaxed pt-1 space-y-0.5 text-left">
+                                <p className="font-semibold text-black">{addr.address}</p>
+                                <p>{addr.locality}</p>
+                                {addr.landmark && <p className="text-gray-400 italic">Landmark: {addr.landmark}</p>}
+                                <p className="font-semibold text-black/80">{addr.city}, {addr.state} - <span className="font-bold text-gold">{addr.pincode}</span></p>
+                              </div>
+                              
+                              {isSelected && pinStatus.message && (
+                                <div className={`pt-2 text-[10px] font-bold ${
+                                  pinStatus.type === 'error' ? 'text-red-500' : pinStatus.type === 'success' ? 'text-green-600' : 'text-gray-400'
+                                }`}>
+                                  {pinStatus.message}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between gap-3 pt-4 border-t border-black/5 mt-4" onClick={e => e.stopPropagation()}>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => { setEditingAddress(addr); setShowAddressForm(true); }}
+                                  className="text-xs font-bold text-gray-500 hover:text-gold transition-colors py-1 px-2.5 rounded-lg border border-black/5 hover:border-gold/30 bg-white"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (window.confirm('Are you sure you want to delete this address?')) {
+                                      try {
+                                        await api.delete(`/addresses/${addr._id}`);
+                                        toast.success('Address deleted successfully!');
+                                        await fetchSavedAddresses();
+                                      } catch (err) {
+                                        toast.error('Failed to delete address');
+                                      }
+                                    }
+                                  }}
+                                  className="text-xs font-bold text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors py-1 px-2.5 rounded-lg border border-transparent hover:border-red-100 bg-white"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+
+                              <button
+                                onClick={() => {
+                                  setSelectedAddressId(addr._id)
+                                  // Wait for sync, or directly trigger advanced payment handler
+                                  setTimeout(() => {
+                                    handleContinueToPayment()
+                                  }, 50)
+                                }}
+                                className="text-[10px] font-bold text-gold hover:text-white bg-gold/10 hover:bg-gold py-1.5 px-3 rounded-lg border border-gold/20 hover:border-transparent transition-all uppercase tracking-wider"
+                              >
+                                Deliver Here
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <button 
+                      onClick={handleContinueToPayment} 
+                      disabled={validating || pinStatus.type === 'error'} 
+                      className="btn-gold mt-6 w-full py-3.5 rounded-xl disabled:opacity-60 font-bold uppercase tracking-wider text-xs"
+                    >
+                      {validating ? 'Checking Delivery...' : 'Continue to Payment'}
+                    </button>
+                  </div>
+                )}
               </motion.div>
             )}
 
